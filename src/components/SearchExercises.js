@@ -1,7 +1,53 @@
 import React, { useEffect, useState } from "react";
 import { Box, Stack, Typography, TextField, Button } from "@mui/material";
+import HorizontalScrollBar from "./HorizontalScrollBar";
 
-const SearchExercises = () => {
+const SearchExercises = ({ setExercises, bodyPart, setBodyPart }) => {
+  const [search, setSearch] = useState("");
+
+  const [bodyParts, setBodyParts] = useState([]);
+  useEffect(() => {
+    const fetchExercisesData = async () => {
+      const bodyPartsData = await fetchData(
+        "https://exercisedb.p.rapidapi.com/exercises/bodyPartList",
+        options
+      );
+      setBodyParts(["all", ...bodyPartsData]);
+    };
+
+    fetchExercisesData();
+  }, []);
+  const options = {
+    method: "GET",
+    url: "https://exercisedb.p.rapidapi.com/exercises/bodyPartList",
+    headers: {
+      "X-RapidAPI-Key": process.env.REACT_APP_RAPID_API_KEY,
+      "X-RapidAPI-Host": "exercisedb.p.rapidapi.com",
+    },
+  };
+  const fetchData = async (url, options) => {
+    const response = await fetch(url, options);
+    const data = response.json();
+
+    return data;
+  };
+  const handleSearch = async () => {
+    if (search) {
+      const exercisesData = await fetchData(
+        "https://exercisedb.p.rapidapi.com/exercises",
+        options
+      );
+
+      const searchedExercises = exercisesData.filter((exercise) => {
+        exercise.name.toLowerCase().includes(search) ||
+          exercise.equipment.toLowerCase().includes(search) ||
+          exercise.bodyParts.toLowerCase().includes(search);
+      });
+      setSearch("");
+      setExercises(searchedExercises);
+    }
+  };
+
   return (
     <Stack alignItems="center" mt="37px" justifyContent={"center"} p="20px">
       <Typography
@@ -21,8 +67,10 @@ const SearchExercises = () => {
             borderRadius: "42px",
           }}
           height="72px"
-          value=""
-          onChange={(e) => {}}
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value.toLowerCase());
+          }}
           placeholder="Search Exercises"
           type={"text"}
         />
@@ -38,9 +86,17 @@ const SearchExercises = () => {
             position: "absolute",
             right: "0",
           }}
+          onClick={handleSearch}
         >
           Search
         </Button>
+      </Box>
+      <Box sx={{ position: "relative", width: "100%", p: "20px" }}>
+        <HorizontalScrollBar
+          data={bodyParts}
+          bodyPart={bodyPart}
+          setBodyPart={setBodyPart}
+        />
       </Box>
     </Stack>
   );
